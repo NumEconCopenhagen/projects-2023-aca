@@ -1,9 +1,9 @@
 # \[Group name\]
 
 **Group members:**
-- A
-- B
-- C
+- Agnete Pade
+- Christopher A
+- Amelia Asp
 
 This repository contains  
 1. Inaugural project. 
