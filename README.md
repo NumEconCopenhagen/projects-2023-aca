@@ -1,6 +1,6 @@
 # \[Programming and numerical analysis\]
 
-**Group members_TEST:** 
+**Group members:** 
 - Agnete Pade
 - Christopher A
 - Amelia Asp
