@@ -3,7 +3,7 @@
 **Group members:** 
 - Agnete Pade..
 - Christopher A
-- Amelia Asp
+- Amelia Asp....
 
 This repository contains  
 1. Inaugural project. 
