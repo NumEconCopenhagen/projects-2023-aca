@@ -4,6 +4,7 @@
 - Agnete Pade
 - Christopher A
 - Amelia Asp
+- Hej Hej 
 
 This repository contains  
 1. Inaugural project. 
