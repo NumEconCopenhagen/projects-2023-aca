@@ -1,4 +1,4 @@
-# \[Group name\]
+# \[HEJ\]
 
 **Group members_TEST:** 
 - Agnete Pade
