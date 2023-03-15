@@ -1,7 +1,7 @@
 # \[Programming and numerical analysis\]
 
 **Group members:** 
-- Agnete Pade
+- Agnete Pade..
 - Christopher A
 - Amelia Asp
 
