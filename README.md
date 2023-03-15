@@ -1,13 +1,9 @@
-# \[HEJ_2\]
+# \[Programming and numerical analysis\]
 
 **Group members_TEST:** 
 - Agnete Pade
 - Christopher A
 - Amelia Asp
-- Hej Hej 
-- hej hej hej 
-- hej hej hej hej 
-- hej hej hej hej hej 
 
 This repository contains  
 1. Inaugural project. 
