@@ -20,11 +20,14 @@ class HouseholdSpecializationModelClass:
         par.nu = 0.001
         par.epsilon = 1.0
         par.omega = 0.5 
-        par.theta = 0.
         
         # c. household production
         par.alpha = 0.5
         par.sigma = 1
+
+        # question 5
+        par.kappa = 0.
+        par.dummy = 0.
 
         # d. wages
         par.wM = 1.0
@@ -44,15 +47,17 @@ class HouseholdSpecializationModelClass:
         sol.beta0 = np.nan
         sol.beta1 = np.nan
     # The function underneith calculates: self,LM,HM,LF,HF
-    def calc_utility(self,LM,HM,LF,HF):
+    def calc_utility(self,LM,HM,LF,HF,sigma=None,alpha=None):
         """ calculate utility """
 
         par = self.par
         sol = self.sol
 
+        sigma = par.sigma if sigma is None else sigma
+        alpha = par.alpha if alpha is None else alpha
+
         # a. consumption of market goods
         C = par.wM*LM + par.wF*LF
-
 
         # b. home production
         H = np.nan
@@ -74,21 +79,23 @@ class HouseholdSpecializationModelClass:
 
         # d. disutlity of work and norms
         epsilon_= 1+1/par.epsilon
-        epsilon_ = 1+1/par.epsilon 
-        theta_ = 1+1/par.theta 
         TM = LM+HM
         TF = LF+HF
 
-        disutility = par.nu*(TM**epsilon_/epsilon_+TF**epsilon_/epsilon_+LM**theta_/theta_)
+        disutility = par.nu*(TM**epsilon_/epsilon_+TF**epsilon_/epsilon_ + par.dummy*(LF**par.kappa))
         
         return utility - disutility
 
-    def solve_discrete(self,do_print=False):
+    def solve_discrete(self,sigma=None,alpha=None,do_print=False):
         """ solve model discretely """
         
         par = self.par
         sol = self.sol
         opt = SimpleNamespace()
+
+         #Accounting for None values of Sigma and Alpha
+        sigma = par.sigma if sigma is None else sigma
+        alpha = par.alpha if alpha is None else alpha
         
         # a. all possible choices
         x = np.linspace(0,24,49)
@@ -121,57 +128,78 @@ class HouseholdSpecializationModelClass:
 
         return opt
 
-    def solve(self,do_print=False):
+    def solve_continuous(self,sigma=None,alpha=None,do_print=False):
         """ solve model continously """
 
         par = self.par
         sol = self.sol
         opt = SimpleNamespace()
+
+         #Accounting for None values of Sigma and Alpha
+        sigma = par.sigma if sigma is None else sigma
+        alpha = par.alpha if alpha is None else alpha
     
-    # a. Define objective function   
-        obj = lambda x: -self.calc_utility(x[0], x[1], x[2], x[3])
+    # a. Define objective function
+        def obj(x):
+            return -self.calc_utility(x[0], x[1], x[2], x[3])
     
     #b. Define Constraints and Bounds (to minimize) 
-        constraints = ({'type': 'ineq', 'fun': lambda x: [24 - x[0] - x[1], 24 - x[2] - x[3]]}) # cannot work more than 24 hours
-        bounds = ((0,24), (0,24), (0,24), (0,24))
-        initial_guess = [6,6,6,6]
+        cons = []
+        cons.append({'type': 'ineq', 'fun': lambda x: 24 - x[0] - x[1]})
+        cons.append({'type': 'ineq', 'fun': lambda x: 24 - x[2] - x[3]})
+        bnds = ((0,24), (0,24), (0,24), (0,24))
+        initial_guess = (4.5,4.5,4.5,4.5) 
 
     #c. Define solver
-        solution = optimize.minimize(obj, initial_guess, method="nelder-mead", bounds=bounds, constraints=constraints)
+        res = optimize.minimize(obj, x0=initial_guess, method="Nelder-mead", bounds=bnds, constraints=cons)
 
-        opt.LM = solution.x[0]
-        opt.HM = solution.x[1]
-        opt.LF = solution.x[2]
-        opt.HF = solution.x[3]
+        opt.LM = res.x[0]
+        opt.HM = res.x[1]
+        opt.LF = res.x[2]
+        opt.HF = res.x[3]
+
+        if do_print:
+            print(res.message)
+
+            print(f'LM: {opt.LM:.4f}')
+            print(f'HM: {opt.HM:.4f}')
+            print(f'LF: {opt.LF:.4f}')
+            print(f'HF: {opt.HF:.4f}')
         
         return opt 
 
     def solve_wF_vec(self,discrete=False):
         """ solve model for vector of female wages """
 
+        #Setting up parameters
         par = self.par
         sol = self.sol
-        
-        #relative_hours = np.zeros(par.wF_vec.size) # make a vector of zeros as the same size of the wF_vec
-        #log_relative_hours = np.zeros(par.wF_vec.size) # make a vector of zeros as the same size of the wF_vec
 
+         # Vectors for results
+        par.lw_vec = np.zeros(len(par.wF_vec)) # log wages
+        par.lH_vec = np.zeros(len(par.wF_vec)) # log hours
+        sol.HM_vec = np.zeros(len(par.wF_vec)) # male home hours
+        sol.HF_vec = np.zeros(len(par.wF_vec)) # female home hours
+        
+        # We Loop through values of wages
         for i, wF in enumerate(par.wF_vec): #solve the model over different values of the wage_vector
-            par.wF = wF
+            par.wF = wF # call wage
+
+            if discrete: # solving with discrete method
+                opt = self.solve_discrete()
             
-            opt = self.solve()
+            else: #solving with continues method 
+
+                opt = self.solve_continuous()
+
+            #Save results 
+            par.lw_vec[i] = np.log(par.wF/par.wM) # log wage 
+            par.lH_vec[i] = np.log(opt.HF/opt.HM) # log hours 
 
             sol.LM_vec[i]= opt.LM
             sol.HM_vec[i]= opt.HM
             sol.LF_vec[i]= opt.LF
             sol.HF_vec[i]= opt.HF
-
-            # relative_hours[i] = sol.HF/sol.HM
-            # log_relative_hours[i] = np.log(sol.HF/sol.HM)
-
-       #  sol.relative_hours = relative_hours
-        # sol.log_relative_hours = log_relative_hours 
-        
-        return sol
 
     def run_regression(self):
         """ run regression """
@@ -186,20 +214,85 @@ class HouseholdSpecializationModelClass:
         A = np.vstack([np.ones(x.size),x]).T
         sol.beta0,sol.beta1 = np.linalg.lstsq(A,y,rcond=None)[0]
     
-    def estimate(self,alpha=None,sigma=None,theta=None):
+    def estimate(self,alpha=None,sigma=None,do_print=False):
         """ estimate alpha and sigma """
         ## Needs to estimate them such that they yield the estimated results
 
         par = self.par
-        sol = self.sol
+        sol = self.sol 
 
-        par.alpha = alpha
-        par.sigma = sigma
-        par.theta = theta
+        def obj(x):
 
-        self.solve_wF_vec()
-
-        self.run_regression()
-
-        return (par.beta0_target-sol.beta0)**2 + (par.beta1_target-sol.beta1)**2
+            #Initial parameters
+            b0 = par.beta0_target
+            b1 = par.beta1_target
+            par.alpha = x[0]
+            par.sigma = x[1]
+            
+            #Solve optimal choice set, account for different wF
+            self.solve_wF_vec(discrete=False)
+            
+            #Run regression for beta_0 and beta_1
+            self.run_regression()
+            
+            return (b0-sol.beta0)**2 + (b1-sol.beta1)**2
         
+        #Setting bounds for alpha and sigma
+        bnds = ((0,1),(0,5))
+        
+        #Minimize objective function for alpha and sigma
+        res = optimize.minimize(obj,x0=(0.5,0.5),method='Nelder-Mead',bounds = bnds)
+        
+        #Saving results of alpha and sigma
+        sol.alpha_hat = res.x[0]
+        sol.sigma_hat = res.x[1]
+
+        if do_print:
+            print(res.message)
+            print(f'alpha_hat: {res.x[0]:.4f}')
+            print(f'sigma_hat: {res.x[1]:.4f}')
+
+            print(f'beta0_hat: {sol.beta0:.4f}')
+            print(f'beta1_hat: {sol.beta1:.4f}')
+            print(f'Termination value: {obj(res.x):.4f}')
+    
+    def estimate_2(self,sigma=None,kappa=None,do_print=False):
+        """ estimate alpha and sigma """
+
+        par = self.par
+        sol = self.sol 
+
+        def obj(x):
+            
+            #Initial parameters
+            b0 = par.beta0_target
+            b1 = par.beta1_target
+            par.sigma = x[0]
+            par.kappa = x[1]
+            
+            #Solve optimal choice set, account for different wF
+            self.solve_wF_vec(discrete=False)
+            
+            #Run regression for beta_0 and beta_1
+            self.run_regression()
+            
+            return (b0-sol.beta0)**2 + (b1-sol.beta1)**2
+        
+        #Setting bounds for sigma and kappa
+        bnds = ((0,5),(0,24))
+        
+        #Minimize objective function for alpha and sigma
+        res = optimize.minimize(obj,x0=(1.25,12),method='Nelder-Mead',bounds = bnds)
+        
+        #Saving results of alpha and sigma
+        sol.sigma_hat = res.x[0]
+        sol.kappa_hat = res.x[1]
+
+        if do_print:
+            print(res.message)
+            print(f'sigma_hat: {res.x[0]:.4f}')
+            print(f'kappa_hat: {res.x[1]:.4f}')
+
+            print(f'beta0_hat: {sol.beta0:.4f}')
+            print(f'beta1_hat: {sol.beta1:.4f}')
+            print(f'Termination value: {obj(res.x):.4f}')
