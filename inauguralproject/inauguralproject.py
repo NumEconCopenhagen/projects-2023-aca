@@ -59,18 +59,13 @@ class HouseholdSpecializationModelClass:
         # a. consumption of market goods
         C = par.wM*LM + par.wF*LF
 
-        # b. home production
-        H = np.nan
-
-        power = (par.sigma - 1)/par.sigma
-
-        if par.sigma == 1:
-            H = HM**(1-par.alpha)*HF**par.alpha
-        elif par.sigma == 0:
-            H = np.fmin(HM, HF)
-        else: 
-            H = (  (1-par.alpha)  * (HM+0.00000000001) **(power) + par.alpha * (HF+0.0000000001)**(power)  )**(1/power)
-            # we write 0000.1 on the chance that we get 0 hours. 
+        # b. home production, NEW: adjusted for different values of sigma
+        if np.isclose(sigma,1):
+            H = HM**(1-alpha)*HF**alpha
+        elif np.isclose(sigma,0.0):
+            H = min(HM,HF)
+        else:
+            H = ((1-alpha)*HM**((sigma-1)/sigma)+alpha*HF**((sigma-1)/sigma))**(sigma/(sigma-1))
     
 
         # c. total consumption utility
@@ -82,6 +77,7 @@ class HouseholdSpecializationModelClass:
         TM = LM+HM
         TF = LF+HF
 
+        #NEW: disutility of norms
         disutility = par.nu*(TM**epsilon_/epsilon_+TF**epsilon_/epsilon_ + par.dummy*(LF**par.kappa))
         
         return utility - disutility
@@ -150,8 +146,8 @@ class HouseholdSpecializationModelClass:
         bnds = ((0,24), (0,24), (0,24), (0,24))
         initial_guess = (4.5,4.5,4.5,4.5) 
 
-    #c. Define solver
-        res = optimize.minimize(obj, x0=initial_guess, method="Nelder-mead", bounds=bnds, constraints=cons)
+    #c. Define solver: PROBLEM: SOLVER AFFECTS LOOK OF GRAPH
+        res = optimize.minimize(obj, x0=initial_guess, method='SLSQP', bounds=bnds, constraints=cons)
 
         opt.LM = res.x[0]
         opt.HM = res.x[1]
@@ -214,7 +210,7 @@ class HouseholdSpecializationModelClass:
         A = np.vstack([np.ones(x.size),x]).T
         sol.beta0,sol.beta1 = np.linalg.lstsq(A,y,rcond=None)[0]
 
-    def estimate_1(self,alpha_vals=None,sigma_vals=None,do_print=False):
+    def estimate_1(self,alpha_vals=None,sigma_vals=None,do_print=False):  #Question 4
         """ estimate alpha and sigma """
         ## Needs to estimate them such that they yield the estimated results
 
@@ -237,7 +233,7 @@ class HouseholdSpecializationModelClass:
             
         return (b0-sol.beta0)**2 + (b1-sol.beta1)**2
     
-    def estimate_2(self,alpha=None,sigma=None,do_print=False):
+    def estimate_2(self,alpha=None,sigma=None,do_print=False):  #Question 4
         """ estimate alpha and sigma """
         ## Needs to estimate them such that they yield the estimated results
 
@@ -281,7 +277,7 @@ class HouseholdSpecializationModelClass:
             print(f'beta1_hat: {sol.beta1:.4f}')
             print(f'Termination value: {obj(res.x):.4f}')
 
-    def estimate_3(self,kappa_vals=None,sigma_vals=None,do_print=False):
+    def estimate_3(self,kappa_vals=None,sigma_vals=None,do_print=False):  #Question 5
         """ estimate kappa and sigma """
         ## Needs to estimate them such that they yield the estimated results
 
@@ -305,7 +301,7 @@ class HouseholdSpecializationModelClass:
         return (b0-sol.beta0)**2 + (b1-sol.beta1)**2
 
     
-    def estimate_4(self,sigma=None,kappa=None,do_print=False):
+    def estimate_4(self,sigma=None,kappa=None,do_print=False): #Question 5
         """ estimate alpha and sigma """
 
         par = self.par
