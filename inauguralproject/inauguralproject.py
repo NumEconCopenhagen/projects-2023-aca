@@ -213,8 +213,31 @@ class HouseholdSpecializationModelClass:
         y = np.log(sol.HF_vec/sol.HM_vec)
         A = np.vstack([np.ones(x.size),x]).T
         sol.beta0,sol.beta1 = np.linalg.lstsq(A,y,rcond=None)[0]
+
+    def estimate_1(self,alpha_vals=None,sigma_vals=None,do_print=False):
+        """ estimate alpha and sigma """
+        ## Needs to estimate them such that they yield the estimated results
+
+        par = self.par
+        sol = self.sol 
+
+          #Accounting for None values of Sigma and Alpha
+        sigma_vals = par.sigma if sigma_vals is None else sigma_vals
+        alpha_vals = par.alpha if alpha_vals is None else alpha_vals
+
+        #Initial parameters
+        b0 = par.beta0_target
+        b1 = par.beta1_target
+            
+        #Solve optimal choice set, account for different wF
+        self.solve_wF_vec(discrete=False)
+            
+        #Run regression for beta_0 and beta_1
+        self.run_regression()
+            
+        return (b0-sol.beta0)**2 + (b1-sol.beta1)**2
     
-    def estimate(self,alpha=None,sigma=None,do_print=False):
+    def estimate_2(self,alpha=None,sigma=None,do_print=False):
         """ estimate alpha and sigma """
         ## Needs to estimate them such that they yield the estimated results
 
@@ -239,11 +262,13 @@ class HouseholdSpecializationModelClass:
         
         #Setting bounds for alpha and sigma
         bnds = ((0,1),(0,5))
-        
-        #Minimize objective function for alpha and sigma
-        res = optimize.minimize(obj,x0=(0.5,0.5),method='Nelder-Mead',bounds = bnds)
-        
-        #Saving results of alpha and sigma
+
+        # Initialize the best objective function value to a large numbe
+
+        # Minimize objective function for alpha and sigma
+        res = optimize.minimize(obj, x0=(0.9, 0.1), method='Nelder-Mead', bounds=bnds)
+
+         #Saving results of alpha and sigma
         sol.alpha_hat = res.x[0]
         sol.sigma_hat = res.x[1]
 
@@ -255,8 +280,32 @@ class HouseholdSpecializationModelClass:
             print(f'beta0_hat: {sol.beta0:.4f}')
             print(f'beta1_hat: {sol.beta1:.4f}')
             print(f'Termination value: {obj(res.x):.4f}')
+
+    def estimate_3(self,kappa_vals=None,sigma_vals=None,do_print=False):
+        """ estimate kappa and sigma """
+        ## Needs to estimate them such that they yield the estimated results
+
+        par = self.par
+        sol = self.sol 
+
+          #Accounting for None values of Sigma and Alpha
+        sigma_vals = par.sigma if sigma_vals is None else sigma_vals
+        kappa_vals = par.kappa if kappa_vals is None else kappa_vals
+
+        #Initial parameters
+        b0 = par.beta0_target
+        b1 = par.beta1_target
+            
+        #Solve optimal choice set, account for different wF
+        self.solve_wF_vec(discrete=False)
+            
+        #Run regression for beta_0 and beta_1
+        self.run_regression()
+            
+        return (b0-sol.beta0)**2 + (b1-sol.beta1)**2
+
     
-    def estimate_2(self,sigma=None,kappa=None,do_print=False):
+    def estimate_4(self,sigma=None,kappa=None,do_print=False):
         """ estimate alpha and sigma """
 
         par = self.par
@@ -282,7 +331,7 @@ class HouseholdSpecializationModelClass:
         bnds = ((0,5),(0,24))
         
         #Minimize objective function for alpha and sigma
-        res = optimize.minimize(obj,x0=(1.25,12),method='Nelder-Mead',bounds = bnds)
+        res = optimize.minimize(obj,x0=(0.8,5),method='Nelder-Mead',bounds = bnds)
         
         #Saving results of alpha and sigma
         sol.sigma_hat = res.x[0]
