@@ -261,7 +261,7 @@ class HouseholdSpecializationModelClass:
 
         # Initialize the best objective function value to a large numbe
 
-        # Minimize objective function for alpha and sigma
+        # Minimize objective function for alpha and sigma. Start value based on 3Dplot
         res = optimize.minimize(obj, x0=(0.9, 0.1), method='Nelder-Mead', bounds=bnds)
 
          #Saving results of alpha and sigma
