@@ -146,8 +146,8 @@ class HouseholdSpecializationModelClass:
         bnds = ((0,24), (0,24), (0,24), (0,24))
         initial_guess = (4.5,4.5,4.5,4.5) 
 
-    #c. Define solver: PROBLEM: SOLVER AFFECTS LOOK OF GRAPH
-        res = optimize.minimize(obj, x0=initial_guess, method='SLSQP', bounds=bnds, constraints=cons)
+    #c. Define solver: DIFFERENCE BETWEEN SLSQP og Nelder Mead
+        res = optimize.minimize(obj, x0=initial_guess, method='SLSQP', bounds=bnds, constraints=cons, tol=1e-10)
 
         opt.LM = res.x[0]
         opt.HM = res.x[1]
