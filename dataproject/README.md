@@ -1,6 +1,6 @@
 # Data analysis project
 
-Our project is titled **Gender inequality across OECD-countries** and is about potential causes in the development of the gender gap.
+Our project is titled **Gender inequality across OECD-countries** and is about the potential causes in the development of the gender gap.
 
 The **results** of the project can be seen from running [dataproject.ipynb](dataproject.ipynb).
 
