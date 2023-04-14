@@ -8,4 +8,5 @@ Our inagural project. Description of method and results in the ipynb file and ex
 
 This repository contains  
 1. Inaugural project. 
+2. Data project.
 
