@@ -32,15 +32,17 @@ class DynHouseholdLaborModelClass(EconModelClass):
         par.rho_02 = 0.1 # weight on labor and home production dis-utility of women
         par.rho_11 = 0.05 # extra distutility of total labor  for women 
         par.rho_12 = 0.05 # extra distutility of total labor for women 
-        par.rho_21 = 0.025 # extra extra disutility of working in home for men
-        par.rho_22 = 0.025 # extra extra disutility of working in labor market for women  
+        par.rho_21 = 0.025 # extra extra utility of working in home for men
+        par.rho_22 = 0.025 # extra extra utility of working in home for women  
+
+        par.norms = 1. # 1: equal gender norms, 0: non-equal gender norms 
 
         par.beta = 0.98 # discount factor
 
         # c. household production 
         par.sigma = 1. # elasticity of substitition between male and female home production
         par.alpha = 0.5 #productivity in home production 
-        par.upsilon = 2. 
+        par.upsilon = 2. #curvature of home production
         
         # d. labor supply
         par.gamma = 2.5 # curvature on labor hours 
@@ -50,14 +52,13 @@ class DynHouseholdLaborModelClass(EconModelClass):
         par.wage_const_2 = 1.0 # constant, women
         par.wage_K_1 = 0.1 # return on human capital, men
         par.wage_K_2 = 0.1 # return on human capital, women
-        par.child_cost = 0.05 # cost of having a child
 
         par.delta = 0.1 # depreciation in human capital
-        par.delta2 = 0.2 # depreciation in human capital return for women 
+        par.delta2 = 0. #decreasing returns to wages for women
 
         # grids        
         par.k_max = 20.0 # maximum point in wealth grid
-        par.Nk = 20 #30 # number of grid points in wealth grid    
+        par.Nk = 20 #30 # number of grid points in wealth grid 
 
         # simulation
         par.simT = par.T # number of periods
@@ -135,8 +136,8 @@ class DynHouseholdLaborModelClass(EconModelClass):
                 for i_k1,capital1 in enumerate(par.k_grid):
                     for i_k2,capital2 in enumerate(par.k_grid):
                         idx = (t,i_n,i_k1,i_k2)
-                        
-                        # ii. find optimal consumption and hours at this level of wealth in this period t.
+                            
+                            # ii. find optimal consumption and hours at this level of wealth in this period t.
                         if t==(par.T-1): # last period
                             obj = lambda x: -self.util(x[0],x[1],x[2],x[3],capital1,capital2,kids)
 
@@ -145,7 +146,7 @@ class DynHouseholdLaborModelClass(EconModelClass):
 
                         # call optimizer
                         bounds = ((0,24), (0,24), (0,24), (0,24))
-                        
+                            
                         init = np.array([6,6,6,6])
 
                         cons = []
@@ -193,12 +194,7 @@ class DynHouseholdLaborModelClass(EconModelClass):
         income2 = self.wage_func(capital2,2,kids) * labor2
         income_hh = income1+income2
 
-        transfers = self.child_transfers(labor1,labor2,income_hh,kids)
-        income_hh = income_hh + transfers
-
-        child_cost = par.child_cost*kids 
-        
-        return income_hh + transfers - child_cost 
+        return income_hh
     
     def home(self,home1,home2):
 
@@ -222,7 +218,7 @@ class DynHouseholdLaborModelClass(EconModelClass):
             return_K = par.wage_K_1
             if sex>1:
                 constant = par.wage_const_2
-                return_K = par.wage_K_2*(1.-par.delta2) #women's return to human capital depreciates if she has children
+                return_K = par.wage_K_2*(1. - par.delta2)
             
         else: 
             constant = par.wage_const_1
@@ -245,29 +241,13 @@ class DynHouseholdLaborModelClass(EconModelClass):
         total1 = labor1 + home1
         total2 = labor2 + home2 
 
-        rho1 = par.rho_01 
+        rho1 = par.rho_01 + par.rho_11*kids*par.norms
         rho2 = par.rho_02 + par.rho_12*kids
 
-        #par.rho_21*kids*(home1)**par.upsilon (men work more after child birth)
-        #+ par.rho_22*kids*(home2)**par.upsilon
-        util_1 = ((Q/2))**(1.0-par.eta) / (1.0-par.eta) - rho1*(total1)**(1.0+par.gamma) / (1.0+par.gamma) - par.rho_21*kids*(home1)**par.upsilon
-        util_2 = ((Q/2))**(1.0-par.eta) / (1.0-par.eta) - rho2*(total2)**(1.0+par.gamma) / (1.0+par.gamma) + par.rho_22*kids*(home2)**par.upsilon 
+        util_1 = ((Q/2))**(1.0-par.eta) / (1.0-par.eta) - rho1*(total1)**(1.0+par.gamma) / (1.0+par.gamma) + par.norms*par.rho_21*kids*(home1)**(1.0+par.gamma) / (1.0+par.gamma)
+        util_2 = ((Q/2))**(1.0-par.eta) / (1.0-par.eta) - rho2*(total2)**(1.0+par.gamma) / (1.0+par.gamma) + par.rho_22*kids*(home2)**(1.0+par.gamma) / (1.0+par.gamma)
 
         return util_1 + util_2
-    
-    def child_transfers(self,labor1,labor2,income_hh,kids):
-        if kids == 1:  
-            C1 = 0.01
-            C2 = np.fmax(0.3-0.001*income_hh,0.0)
-
-            both_work = (labor1>0.0)*(labor2>0.0)
-            C3 = -0.01*both_work
-            C4 = -0.01*both_work*(income_hh<0.5)
-        
-            return C1 + C2 + C3 + C4 
-
-        else:
-            return 0.0
 
     ##############
     # Simulation #
@@ -299,22 +279,12 @@ class DynHouseholdLaborModelClass(EconModelClass):
                 sim.income1[i,t] = self.wage_func(sim.k1[i,t],1,sim.n[i,t])*sim.l1[i,t]
                 sim.income2[i,t] = self.wage_func(sim.k2[i,t],2,sim.n[i,t])*sim.l2[i,t]
                 sim.income_hh[i,t] = sim.income1[i,t] + sim.income2[i,t]
-
-                sim.transfers[i,t] = self.child_transfers(sim.l1[i,t],sim.l2[i,t],sim.income_hh[i,t],sim.n[i,t])
-        
-                # store tax
-                if par.joint_tax:
-                    sim.tax_hh[i,t] = self.tax_func(sim.income_hh[i,t])
-                
-                else: 
-                    sim.tax1[i,t] = self.tax_func(sim.income1[i,t])
-                    sim.tax2[i,t] = self.tax_func(sim.income2[i,t])
-                    sim.tax_hh[i,t] = sim.tax1[i,t] + sim.tax2[i,t]
                         
                 # iii. store next-period states
                 if t<par.simT-1:
                     sim.k1[i,t+1] = (1.0-par.delta)*sim.k1[i,t] + sim.l1[i,t]
                     sim.k2[i,t+1] = (1.0-par.delta)*sim.k2[i,t] + sim.l2[i,t]
+
 
                     birth = 0 
                     if ((sim.draws_uniform[i,t] <= par.p_birth) & (sim.n[i,t]<(par.Nn-1))):
