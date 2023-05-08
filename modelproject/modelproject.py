@@ -57,8 +57,8 @@ class DynHouseholdLaborModelClass(EconModelClass):
         par.delta2 = 0. #decreasing returns to wages for women
 
         # grids        
-        par.k_max = 20.0 # maximum point in wealth grid
-        par.Nk = 20 #30 # number of grid points in wealth grid 
+        par.k_max = 20.0 # maximum point in human capital grid
+        par.Nk = 20 #30 # number of grid points in human capital grid 
 
         # simulation
         par.simT = par.T # number of periods
