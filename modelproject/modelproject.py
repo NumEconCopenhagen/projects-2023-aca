@@ -28,12 +28,12 @@ class DynHouseholdLaborModelClass(EconModelClass):
         par.omega = 0.5 # weight on consumption
         par.gamma = 2.5 # curvature on hours 
 
-        par.rho_01 = 0.1 # weight on labor and home production dis-utility of men
-        par.rho_02 = 0.1 # weight on labor and home production dis-utility of women
-        par.rho_11 = 0.05 # extra distutility of total labor  for women 
-        par.rho_12 = 0.05 # extra distutility of total labor for women 
-        par.rho_21 = 0.025 # extra extra utility of working in home for men
-        par.rho_22 = 0.025 # extra extra utility of working in home for women  
+        par.rho_01 = 0.1 #dis-utility of working: men
+        par.rho_02 = 0.1 # dis-utility of working: women
+        par.rho_11 = 0.05 # extra distutility of total labor for men after having kids
+        par.rho_12 = 0.05 # extra distutility of total labor for women after having kids
+        par.rho_21 = 0.025 # extra extra utility of working in home for men after having kids
+        par.rho_22 = 0.025 # extra extra utility of working in home for women  after having kids
 
         par.norms = 1. # 1: equal gender norms, 0: non-equal gender norms 
 
@@ -42,10 +42,9 @@ class DynHouseholdLaborModelClass(EconModelClass):
         # c. household production 
         par.sigma = 1. # elasticity of substitition between male and female home production
         par.alpha = 0.5 #productivity in home production 
-        par.upsilon = 2. #curvature of home production
         
         # d. labor supply
-        par.gamma = 2.5 # curvature on labor hours 
+        par.gamma = 2.5 # curvature on hours 
        
         # income
         par.wage_const_1 = 1.0 # constant, men
@@ -54,7 +53,7 @@ class DynHouseholdLaborModelClass(EconModelClass):
         par.wage_K_2 = 0.1 # return on human capital, women
 
         par.delta = 0.1 # depreciation in human capital
-        par.delta2 = 0. #decreasing returns to wages for women
+        par.delta2 = 0. #depreciation in returns to human capital for women
 
         # grids        
         par.k_max = 20.0 # maximum point in human capital grid
@@ -244,8 +243,10 @@ class DynHouseholdLaborModelClass(EconModelClass):
         rho1 = par.rho_01 + par.rho_11*kids*par.norms
         rho2 = par.rho_02 + par.rho_12*kids
 
-        util_1 = ((Q/2))**(1.0-par.eta) / (1.0-par.eta) - rho1*(total1)**(1.0+par.gamma) / (1.0+par.gamma) + par.norms*par.rho_21*kids*(home1)**(1.0+par.gamma) / (1.0+par.gamma)
-        util_2 = ((Q/2))**(1.0-par.eta) / (1.0-par.eta) - rho2*(total2)**(1.0+par.gamma) / (1.0+par.gamma) + par.rho_22*kids*(home2)**(1.0+par.gamma) / (1.0+par.gamma)
+        #par.norms*par.rho_21*kids*(home1)**(1.0+par.gamma) / (1.0+par.gamma)
+        # par.rho_22*kids*(home2)**(1.0+par.gamma) / (1.0+par.gamma) 
+        util_1 = ((Q/2))**(1.0-par.eta) / (1.0-par.eta) - rho1*(total1)**(1.0+par.gamma) / (1.0+par.gamma) 
+        util_2 = ((Q/2))**(1.0-par.eta) / (1.0-par.eta) - rho2*(total2)**(1.0+par.gamma) / (1.0+par.gamma) 
 
         return util_1 + util_2
 
