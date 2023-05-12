@@ -41,7 +41,9 @@ class DynHouseholdLaborModelClass(EconModelClass):
 
         # c. household production 
         par.sigma = 1. # elasticity of substitition between male and female home production
-        par.alpha = 0.5 #productivity in home production 
+        par.alpha = 0.5 #productivity in home production
+
+        par.kappa = 0.5 
         
         # d. labor supply
         par.gamma = 2.5 # curvature on hours 
@@ -245,8 +247,9 @@ class DynHouseholdLaborModelClass(EconModelClass):
 
         #par.norms*par.rho_21*kids*(home1)**(1.0+par.gamma) / (1.0+par.gamma)
         # par.rho_22*kids*(home2)**(1.0+par.gamma) / (1.0+par.gamma) 
-        util_1 = ((Q/2))**(1.0-par.eta) / (1.0-par.eta) - rho1*(total1)**(1.0+par.gamma) / (1.0+par.gamma) 
-        util_2 = ((Q/2))**(1.0-par.eta) / (1.0-par.eta) - rho2*(total2)**(1.0+par.gamma) / (1.0+par.gamma) 
+        util_1 = ((Q/2))**(1.0-par.eta) / (1.0-par.eta) - rho1*(total1)**(1.0+par.gamma) / (1.0+par.gamma) - par.rho_21*kids*par.norms*labor1**par.kappa
+        util_2 = ((Q/2))**(1.0-par.eta) / (1.0-par.eta) - rho2*(total2)**(1.0+par.gamma) / (1.0+par.gamma) - par.rho_22*kids*labor2**par.kappa
+
 
         return util_1 + util_2
 
