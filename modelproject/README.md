@@ -1,6 +1,6 @@
 # Model analysis project
 
-Our project is titled **"Gender norms in home production and labor market supply"** and is about .
+Our project is titled **"Gender norms in home production and labor market supply"** and is a dynamic model on households time decision in home- and labor market production including children.
 
 The **results** of the project can be seen from running [modelproject.ipynb](modelproject.ipynb).
 
