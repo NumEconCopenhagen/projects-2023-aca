@@ -59,14 +59,13 @@ class HouseholdSpecializationModelClass:
         # a. consumption of market goods
         C = par.wM*LM + par.wF*LF
 
-        # b. home production, NEW: adjusted for different values of sigma
-        if np.isclose(sigma,1):
+        if sigma==1:
             H = HM**(1-alpha)*HF**alpha
-        elif np.isclose(sigma,0.0):
-            H = min(HM,HF)
+        elif sigma==0:
+            H = np.min(HM,HF)
         else:
             H = ((1-alpha)*HM**((sigma-1)/sigma)+alpha*HF**((sigma-1)/sigma))**(sigma/(sigma-1))
-    
+
 
         # c. total consumption utility
         Q = C**par.omega*H**(1-par.omega)
