@@ -102,3 +102,5 @@ class demandClass:
         H = np.mean(sim.h_values)
 
         print("Salon expected value with K = 5000 iterations:", round(H, 1))
+
+
