@@ -116,5 +116,5 @@ class TaxationClass:
 
         if do_print:
             print(res.message)
-            print(f'tau_hat: {res.x[0]:.4f}')
-            print(f'Utility value: {-obj(res.x):.4f}')
+            print(f'tau_hat: {res.x[0]:.2f}')
+            print(f'Utility value: {-obj(res.x):.2f}') # We negate the value because it represents a minimizer.
