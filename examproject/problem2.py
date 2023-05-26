@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import numpy as np
 from scipy import optimize
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 
 class DemandClass:
     def __init__(self):
@@ -27,9 +28,9 @@ class DemandClass:
     def policy(self, kappa, l_lag):
         l_opt = ((1 - self.eta) * kappa / self.w)**(1 / self.eta)
 
-        if self.q_3 == 0.:
+        if self.q_3 == 0.: # question 1-2
             return l_opt
-        else: 
+        else: # question 3-4
             if abs(l_lag - l_opt) > self.Delta:
                 return l_opt
             else:
@@ -80,11 +81,12 @@ class DemandClass:
         optimal_H = H_values[np.argmax(H_values)]
 
         # Plot the results
-        plt.plot(delta_values, H_values)
-        plt.xlabel('Delta')
+        plt.plot(delta_values, H_values, color ='blue')
+        plt.xlabel('$\Delta$')
         plt.ylabel('H')
-        plt.title('Optimal Delta for Maximizing H')
+        plt.title('Optimal $\Delta$ for Maximizing H')
         plt.grid(True)
+        plt.gca().yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
         plt.show()
 
         return optimal_delta, optimal_H
