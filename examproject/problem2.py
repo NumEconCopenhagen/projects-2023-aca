@@ -2,105 +2,93 @@
 from types import SimpleNamespace
 
 import numpy as np
+from scipy import optimize
+import matplotlib.pyplot as plt
 
-class demandClass:
-
+class DemandClass:
     def __init__(self):
+        self.rho = 0.90
+        self.iota = 0.01
+        self.mean_epsilon_sq = -0.5 * 0.10**2
+        self.sigma_epsilon = 0.10
+        self.R = (1 + 0.01)**(1/12)
+        self.T = 120
+        self.w = 1.0
+        self.eta = 0.5
+        self.q_3 = 0.
+        self.Delta = 0.2
+        self.simK = 5000
+        self.simT = 120
+        self.h_v = np.empty(self.simK)
 
-        par = self.par = SimpleNamespace() # parameters
-        sim = self.sim = SimpleNamespace() # simulation variables
+    def kappa(self, kappa_lag, epsilon):
+        return self.rho * kappa_lag + epsilon
 
-        par.rho = 0.90
-        par.iota = 0.01
-        par.mean_epsilon_sq = -0.5*0.10**2
-        par.sigma_epsilon = 0.10
-        par.R = (1 + 0.01)**(1/12)
-        par.T = 120
-        par.w = 1.0
-        par.eta = 0.5
-        
-        par.q_3 = 0.
-        par.pol = 0.2
+    def policy(self, kappa, l_lag):
+        l_opt = ((1 - self.eta) * kappa / self.w)**(1 / self.eta)
 
-        # Set number of iterations for simulation
-        par.simK = 5000
+        if self.q_3 == 0.:
+            return l_opt
+        else: 
+            if abs(l_lag - l_opt) > self.Delta:
+                return l_opt
+            else:
+                return l_lag
 
-        # Set number of periods for simulation
-        par.simT = 120
-
-        # Set number of interations for shock series
-        sim.h_values = np.empty(par.simK)
-
-         # Simulation vector
-        sim.epsilon_v = np.empty(par.simT)
-
-        sim.kappa_v = np.empty(par.simT)
-        sim.l_v = np.empty(par.simT)
-        sim.l_lag_v = np.empty(par.simT)
-
-        sim.profit_v = np.empty(par.simT)
-
-     # Define kappa (demand shock) function
-    def kappa(self,kappa_lag,epsilon):
-        par = self.par
-        return par.rho*(kappa_lag) + epsilon
-
-    # Define policy function
-    def policy(self,kappa):
-        par = self.par
-        return ((1-par.eta)*kappa/par.w)**(1/par.eta)
-
-    # Define profit function
-    def profit(self,l,l_lag,kappa):
-        par = self.par
+    def profit(self, l, l_lag, kappa):
         if l == l_lag:
             iota_ = 0.
-        else: 
-            iota_ = par.iota
+        else:
+            iota_ = self.iota
 
-        return kappa*l**(1-par.eta) - par.w*l - iota_
-    
-    def simulate(self):
+        return kappa * l**(1 - self.eta) - self.w * l - iota_
+
+    def simulate(self, do_print=False):
         np.random.seed(1917)
 
-        par = self.par
-        sim = self.sim
+        for k in range(self.simK):
+            epsilon_v = np.random.normal(loc=self.mean_epsilon_sq, scale=self.sigma_epsilon, size=self.simT)
+            kappa_v = np.empty(self.simT)
+            l_v = np.empty(self.simT)
+            l_lag_v = np.empty(self.simT)
+            profit_v = np.empty(self.simT)
 
-        # Simulate epsilon shocks with K iterations across T periods
-        for k in range(par.simK):
-            sim.epsilon_v = np.random.normal(loc=par.mean_epsilon_sq, scale=par.sigma_epsilon, size=par.simT)
-            
-            # Set initial values
-            sim.kappa_v[0] = 1.0 + np.exp(sim.epsilon_v[0])
+            kappa_v[0] = np.exp(epsilon_v[0])
+            l_v[0] = self.policy(kappa_v[0], 0)  # Assuming initial policy is l_{-1} = 0
+
+            for t in range(1, self.simT):
+                kappa_v[t] = self.kappa(kappa_v[t-1], np.exp(epsilon_v[t]))
+                l_v[t] = self.policy(kappa_v[t], l_v[t-1])
+                l_lag_v[t] = l_v[t-1]
+                profit_v[t] = self.profit(l_v[t], l_lag_v[t], kappa_v[t])
+
+            self.h_v[k] = np.sum(profit_v)
+
+        H = np.mean(self.h_v)
+        if do_print:
+            print("Salon expected value with K = 5000 iterations:", round(H, 1))
+    
+    def find_optimal_delta(self, delta_values):
+        H_values = []  # To store the H values for different delta values
+
+        for delta in delta_values:
+            self.Delta = delta
+            self.simulate()
+            H_values.append(np.mean(self.h_v))
+
+        optimal_delta = delta_values[np.argmax(H_values)]
+        optimal_H = H_values[np.argmax(H_values)]
+
+        # Plot the results
+        plt.plot(delta_values, H_values)
+        plt.xlabel('Delta')
+        plt.ylabel('H')
+        plt.title('Optimal Delta for Maximizing H')
+        plt.grid(True)
+        plt.show()
+
+        return optimal_delta, optimal_H
+    
+    
+
         
-             # Find values for t>0
-            if par.q_3 == 0.: #question 1-2 with only the orginal policy function
-                for t in range(1,par.simT):
-                    sim.kappa_v[t] = self.kappa(sim.kappa_v[t-1], np.exp(sim.epsilon_v[t]))
-                    sim.l_v[t] = self.policy(sim.kappa_v[t])
-                    sim.l_lag_v[t] = np.concatenate(([0], sim.l_v[:-1]))[t] # 0 put in as first value 
-                    
-                    sim.profit_v[t] = par.R**(-t)*self.profit(sim.l_v[t], sim.l_lag_v[t], sim.kappa_v[t])
-
-            else: #question 3-5 with the new policy function 
-                for t in range(1,par.simT):
-                    sim.kappa_v[t] = self.kappa(sim.kappa_v[t-1], np.exp(sim.epsilon_v[t]))
-
-                    if np.abs(sim.l_v[t-1]-self.policy(sim.kappa_v[t])) > par.pol:
-                        sim.l_v[t] = self.policy(sim.kappa_v[t]) # use policy function
-                        sim.l_lag_v[t] = np.concatenate(([0], sim.l_v[:-1]))[t] # 0 put in as first value 
-                    else: 
-                        sim.l_v[t] = sim.l_v[t-1] # use lagged employment 
-                        sim.l_lag_v[t] = np.concatenate(([0], sim.l_v[:-1]))[t] # 0 put in as first value 
-                
-                    sim.profit_v[t] = par.R**(-t)*self.profit(sim.l_v[t], sim.l_lag_v[t], sim.kappa_v[t])
-
-            # Save profits for each iteration 
-            sim.h_values[k] = np.sum(sim.profit_v)
-
-        # Take mean of all iterations and find expected profits
-        H = np.mean(sim.h_values)
-
-        print("Salon expected value with K = 5000 iterations:", round(H, 1))
-
-
