@@ -17,9 +17,10 @@ class DemandClass:
         self.w = 1.0
         self.eta = 0.5
         self.q_3 = 0.
-        self.Delta = 0.2
+        self.Delta = 0.05
         self.simK = 5000
         self.simT = 120
+        
         self.h_v = np.empty(self.simK)
 
     def kappa(self, kappa_lag, epsilon):
@@ -45,16 +46,17 @@ class DemandClass:
         return kappa * l**(1 - self.eta) - self.w * l - iota_
 
     def simulate(self, do_print=False):
+
         np.random.seed(1917)
 
         for k in range(self.simK):
             epsilon_v = np.random.normal(loc=self.mean_epsilon_sq, scale=self.sigma_epsilon, size=self.simT)
-            kappa_v = np.empty(self.simT)
+            kappa_v = np.empty(self.simT) 
             l_v = np.empty(self.simT)
             l_lag_v = np.empty(self.simT)
             profit_v = np.empty(self.simT)
 
-            kappa_v[0] = np.exp(epsilon_v[0])
+            kappa_v[0] = self.kappa(1.0, np.exp(epsilon_v[0])) # Assuming initial policy is k_{-1} = 1
             l_v[0] = self.policy(kappa_v[0], 0)  # Assuming initial policy is l_{-1} = 0
 
             for t in range(1, self.simT):
